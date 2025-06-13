@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WARRIORING</title>
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Great+Vibes&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'MedievalSharp', cursive;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/9/94/Old_Map_style_background.png') no-repeat center center fixed;
+      background-size: cover;
+      color: #2b1b08;
+    }
+
+    #inicio {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: rgba(255, 248, 220, 0.6);
+      text-align: center;
+      padding: 20px;
+    }
+
+    #inicio h1 {
+      font-size: 4rem;
+      margin-bottom: 10px;
+      font-family: 'MedievalSharp', cursive;
+      color: #3e2c1c;
+      text-shadow: 2px 2px #d9c58a;
+    }
+
+    #inicio p {
+      font-size: 1.2rem;
+      font-style: italic;
+      font-family: 'Great Vibes', cursive;
+    }
+
+    #boton-jugar {
+      padding: 10px 30px;
+      font-size: 1.4rem;
+      margin-top: 20px;
+      background-color: #a97d48;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: 'MedievalSharp', cursive;
+    }
+
+    #boton-jugar:hover {
+      background-color: #7f5c30;
+    }
+
+    .chat-container {
+      display: none;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background-color: rgba(255, 248, 220, 0.7);
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    }
+
+    #chat {
+      min-height: 200px;
+      margin-bottom: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      background: rgba(250, 240, 200, 0.6);
+      border: 2px solid #cbbd96;
+      border-radius: 8px;
+    }
+
+    .option-button {
+      display: inline-block;
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 1.1rem;
+      background-color: #b3935c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'MedievalSharp', cursive;
+    }
+
+    .option-button:hover {
+      background-color: #7d643b;
+    }
+
+    #puntos, #record {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin: 5px;
+    }
+
+    .barra-vida {
+      height: 25px;
+      width: 100%;
+      background-color: #ddd;
+      border: 2px solid #7a5c3e;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .barra-vida-interior {
+      height: 100%;
+      width: 100%;
+      background-color: #e74c3c;
+      text-align: center;
+      line-height: 25px;
+      color: white;
+      font-weight: bold;
+      transition: width 0.5s ease;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="inicio">
+    <h1>WARRIORING</h1>
+    <button id="boton-jugar">Jugar</button>
+    <p>Creado por SALVA.M</p>
+    <p>SI SE TE OCURRE LO HACES</p>
+  </div>
+
+  <div class="chat-container">
+    <div id="menu"></div>
+    <div class="barra-vida"><div id="vidaBarra" class="barra-vida-interior">100%</div></div>
+    <div id="puntos">Puntos: 0</div>
+    <div id="record">Récord: 0</div>
+    <div id="chat"></div>
+    <div id="options"></div>
+  </div>
+
+  <audio id="victory-sound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_3e03311752.mp3"></audio>
+  <script>
+    const chat = document.getElementById("chat");
+    const options = document.getElementById("options");
+    const puntosDiv = document.getElementById("puntos");
+    const recordDiv = document.getElementById("record");
+    const menu = document.getElementById("menu");
+    const inicio = document.getElementById("inicio");
+    const jugarBtn = document.getElementById("boton-jugar");
+    const contenedorChat = document.querySelector(".chat-container");
+    const victorySound = document.getElementById("victory-sound");
+    const vidaBarra = document.getElementById("vidaBarra");
+
+    const bgMusic = new Audio("https://cdn.pixabay.com/audio/2022/10/12/audio_11352f1ba4.mp3");
+    bgMusic.loop = true;
+    bgMusic.volume = 0.3;
+
+    let puntos = parseInt(localStorage.getItem("puntos")) || 0;
+    let record = parseInt(localStorage.getItem("record")) || 0;
+    let personaje = null;
+    let vida = 100;
+    let historial = [];
+
+    const personajes = {
+      mago: { nombre: "🧙 Mago", fuerza: 4, suerte: 14, magia: 10 },
+      guerrero: { nombre: "🛡 Guerrero", fuerza: 12, suerte: 10, magia: 2 },
+      ladron: { nombre: "🦊 Ladrón", fuerza: 7, suerte: 12, magia: 3 }
+    };
+
+    function actualizarVida(cantidad) {
+      vida += cantidad;
+      if (vida > 100) vida = 100;
+      if (vida <= 0) {
+        vida = 0;
+        mensaje("☠ Has muerto en la aventura...");
+        setTimeout(() => reiniciarJuego(), 3000);
+      }
+      vidaBarra.style.width = vida + "%";
+      vidaBarra.textContent = vida + "%";
+    }
+
+    function actualizarPuntos(cantidad) {
+      puntos += cantidad;
+      if (puntos > record) {
+        record = puntos;
+        localStorage.setItem("record", record);
+      }
+      localStorage.setItem("puntos", puntos);
+      puntosDiv.textContent = `Puntos: ${puntos}`;
+      recordDiv.textContent = `Récord: ${record}`;
+    }
+
+    function mensaje(texto) {
+      const linea = document.createElement("p");
+      linea.textContent = texto;
+      linea.style.opacity = 0;
+      chat.appendChild(linea);
+      chat.scrollTop = chat.scrollHeight;
+      setTimeout(() => linea.style.opacity = 1, 100);
+    }
+
+    function crearBoton(texto, accion) {
+      const btn = document.createElement("button");
+      btn.textContent = texto;
+      btn.className = "option-button";
+      btn.onclick = accion;
+      btn.style.opacity = 0;
+      options.appendChild(btn);
+      setTimeout(() => btn.style.opacity = 1, 200);
+    }
+
+    function eventoAleatorio() {
+      options.innerHTML = "";
+      if (historial.length >= eventos.length) historial = [];
+      let candidatos = eventos.filter(ev => !historial.includes(ev.id));
+      const evento = candidatos[Math.floor(Math.random() * candidatos.length)];
+      historial.push(evento.id);
+      const texto = typeof evento.texto === "function" ? evento.texto() : evento.texto;
+      mensaje(texto);
+      evento.opciones.forEach(op => crearBoton(op.texto, () => {
+        mensaje(`> ${op.texto}`);
+        op.accion();
+      }));
+    }
+
+    function combateAvanzado() {
+      const enemigo = Math.ceil(Math.random() * 10 + 5);
+      const suerte = Math.floor(Math.random() * personaje.suerte);
+      const ataqueJugador = Math.ceil(Math.random() * personaje.fuerza + suerte);
+      mensaje(`Tu ataque: ${ataqueJugador} | Defensa enemiga: ${enemigo}`);
+
+      setTimeout(() => {
+        if (ataqueJugador >= enemigo) {
+          mensaje("✔ ¡Victoria! Derrotaste al enemigo.");
+          victorySound.play();
+          actualizarPuntos(10);
+        } else {
+          mensaje("❌ Has sido herido, pero escapas con vida.");
+          actualizarPuntos(-3);
+          actualizarVida(-25);
+        }
+        eventoAleatorio();
+      }, 1200);
+    }
+
+    function mostrarMenuPersonaje() {
+      menu.innerHTML = "<h2>Elegí tu personaje:</h2>";
+      options.innerHTML = "";
+      chat.innerHTML = "";
+      puntos = 0;
+      vida = 100;
+      localStorage.setItem("puntos", "0");
+      actualizarPuntos(0);
+      actualizarVida(0);
+      for (const key in personajes) {
+        const p = personajes[key];
+        const btn = document.createElement("button");
+        btn.className = "option-button";
+        btn.innerHTML = `${p.nombre}<br>Fuerza: ${p.fuerza} | Suerte: ${p.suerte} | Magia: ${p.magia}`;
+        btn.onclick = () => {
+          personaje = p;
+          menu.innerHTML = `<p>Elegiste: ${p.nombre}</p>`;
+          eventoAleatorio();
+        };
+        options.appendChild(btn);
+      }
+    }
+
+    function reiniciarJuego() {
+      personaje = null;
+      historial = [];
+      mostrarMenuPersonaje();
+    }
+
+    jugarBtn.onclick = () => {
+      inicio.style.display = "none";
+      contenedorChat.style.display = "block";
+      bgMusic.play();
+      mostrarMenuPersonaje();
+    };
+
+    const enemigos = ["💀 Esqueleto", "👺 Bandido", "🐉 Dragón", "👻 Fantasma", "🧛 Vampiro"];
+
+    const eventos = [
+      {
+        id: "acertijo1",
+        texto: "Un sabio te pregunta: '¿Qué sube pero nunca baja?'",
+        opciones: [
+          { texto: "Tu edad", accion: () => { mensaje("Correcto!"); actualizarPuntos(5); eventoAleatorio(); } },
+          { texto: "La marea", accion: () => { mensaje("Fallo."); eventoAleatorio(); } }
+        ]
+      },
+      {
+        id: "combate1",
+        texto: () => `Un ${enemigos[Math.floor(Math.random() * enemigos.length)]} aparece. ¡Te ataca!`,
+        opciones: [
+          { texto: "Luchar", accion: combateAvanzado },
+          { texto: "Huir", accion: () => { mensaje("Escapas, pero pierdes puntos."); actualizarPuntos(-5); eventoAleatorio(); } }
+        ]
+      },
+      {
+        id: "romance",
+        texto: "Te cruzas con un alma solitaria en la posada. ¿Te acercas?",
+        opciones: [
+          { texto: "Sí", accion: () => { mensaje("Pasas una noche inolvidable. Recuperás energía."); actualizarVida(10); actualizarPuntos(6); eventoAleatorio(); } },
+          { texto: "No", accion: () => { mensaje("Te perdés una oportunidad única."); eventoAleatorio(); } }
+        ]
+      },
+      {
+        id: "trampaMagica",
+        texto: "Una niebla mágica te envuelve. Tirá el dado para disiparla.",
+        opciones: [
+          { texto: "Tirar dado", accion: combateAvanzado }
+        ]
+      },
+      {
+        id: "misterio",
+        texto: "Escuchás susurros en una cueva oscura. ¿Entrás?",
+        opciones: [
+          { texto: "Sí", accion: () => { mensaje("Encontrás un grimorio. Ganás sabiduría."); actualizarPuntos(7); eventoAleatorio(); } },
+          { texto: "No", accion: () => { mensaje("La prudencia también es sabia."); actualizarPuntos(2); eventoAleatorio(); } }
+        ]
+      },
+      {
+        id: "descubrimiento",
+        texto: "Descubrís unas ruinas olvidadas. Algo brilla entre los escombros.",
+        opciones: [
+          { texto: "Investigar", accion: () => { mensaje("¡Hallás un artefacto ancestral!"); actualizarPuntos(9); eventoAleatorio(); } },
+          { texto: "Ignorar", accion: () => { mensaje("Tal vez no era tan importante..."); eventoAleatorio(); } }
+        ]
+      },
+      {
+        id: "resbalon",
+        texto: "Te resbalás en caca de dragón y caés frente a unos elfos.",
+        opciones: [
+          { texto: "Reírte contigo mismo", accion: () => { mensaje("Los elfos te aplauden. Ganas carisma."); actualizarPuntos(3); eventoAleatorio(); } },
+          { texto: "Correr avergonzado", accion: () => { mensaje("Chocás con un árbol. -2 puntos."); actualizarPuntos(-2); actualizarVida(-5); eventoAleatorio(); } }
+        ]
+      }
+    ];
+  </script>
+</body>
+</html>
